@@ -30,12 +30,18 @@
     <ClInclude Include="ProcessSnapshotReader.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
+    <ClInclude Include="ui.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="University.ProcThreadInspector.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="ProcessSnapshotReader.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="ui.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
   </ItemGroup>

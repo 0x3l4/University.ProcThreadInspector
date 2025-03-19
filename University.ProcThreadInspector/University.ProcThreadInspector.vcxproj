@@ -131,10 +131,12 @@
     <ClInclude Include="ProcessSnapshotReader.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="ui.h" />
     <ClInclude Include="University.ProcThreadInspector.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ProcessSnapshotReader.cpp" />
+    <ClCompile Include="ui.cpp" />
     <ClCompile Include="University.ProcThreadInspector.cpp" />
   </ItemGroup>
   <ItemGroup>

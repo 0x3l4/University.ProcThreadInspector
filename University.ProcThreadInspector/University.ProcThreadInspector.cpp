@@ -3,6 +3,7 @@
 #include "framework.h"
 #include "University.ProcThreadInspector.h"
 #include "ProcessSnapshotReader.h"
+#include "ui.h"
 
 #define MAX_LOADSTRING 100
 
@@ -101,6 +102,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
 	{
+	case WM_CREATE:
+		CreateControls(hWnd);
+		break;
 	case WM_COMMAND:
 	{
 		int wmId = LOWORD(wParam);
@@ -152,4 +156,3 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	}
 	return (INT_PTR)FALSE;
 }
-
