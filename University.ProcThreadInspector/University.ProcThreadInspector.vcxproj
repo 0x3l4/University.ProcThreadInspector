@@ -128,14 +128,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="framework.h" />
-    <ClInclude Include="ProcessSnapshotReader.h" />
+    <ClInclude Include="PopulateProcessList.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="ui.h" />
     <ClInclude Include="University.ProcThreadInspector.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ProcessSnapshotReader.cpp" />
+    <ClCompile Include="PopulateProcessList.cpp" />
     <ClCompile Include="ui.cpp" />
     <ClCompile Include="University.ProcThreadInspector.cpp" />
   </ItemGroup>

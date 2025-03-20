@@ -2,7 +2,8 @@
 #include <TlHelp32.h>
 #include "framework.h"
 #include "University.ProcThreadInspector.h"
-#include "ProcessSnapshotReader.h"
+#include "PopulateProcessList.h"
+#include <commctrl.h>
 #include "ui.h"
 
 #define MAX_LOADSTRING 100
@@ -16,6 +17,8 @@ ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
+HWND hListProcesses;
+HWND hListThreads; 
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -37,14 +40,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_UNIVERSITYPROCTHREADINSPECTOR));
 
 	MSG msg;
-
-	ProcessSnapshotReader* reader = new ProcessSnapshotReader();
-
-	reader->Read();
-
-
-
-	delete reader;
 
 	while (GetMessage(&msg, nullptr, 0, 0))
 	{
@@ -103,12 +98,49 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	switch (message)
 	{
 	case WM_CREATE:
-		CreateControls(hWnd);
+		hListProcesses = CreateWindowW(WC_LISTVIEW, NULL,
+			WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SINGLESEL,
+			20, 20, 400, 300,
+			hWnd, (HMENU)IDC_LIST_PROCESSES, NULL, NULL);
+
+		// Добавляем таблицу потоков
+		hListThreads = CreateWindowW(WC_LISTVIEW, NULL,
+			WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SINGLESEL,
+			450, 20, 300, 300,
+			hWnd, (HMENU)IDC_LIST_THREADS, NULL, NULL);
+
+		// Инициализируем таблицы
+		InitProcessListView(hListProcesses);
+		InitThreadListView(hListThreads);
+
+		// Заполняем список процессов
+		PopulateProcessesList(hListProcesses);
+		break;	
+	case WM_PAINT:
+	{
+		PAINTSTRUCT ps;
+		HDC hdc = BeginPaint(hWnd, &ps);
+		EndPaint(hWnd, &ps);
+	}
+	break;
+	case WM_DESTROY:
+		PostQuitMessage(0);
 		break;
 	case WM_COMMAND:
 	{
 		int wmId = LOWORD(wParam);
 		// Разобрать выбор в меню:
+		if (LOWORD(wParam) == IDC_LIST_PROCESSES && HIWORD(wParam) == LBN_SELCHANGE) {
+			int index = (int)SendMessage(hListProcesses, LB_GETCURSEL, 0, 0);
+			if (index != LB_ERR) {
+				wchar_t buffer[256];
+				SendMessage(hListProcesses, LB_GETTEXT, index, (LPARAM)buffer);
+
+				DWORD processID = _wtoi(buffer);  // Получаем PID
+				PopulateThreadsList(hListThreads, processID);
+			}
+		}
+
 		switch (wmId)
 		{
 		case IDM_ABOUT:
@@ -122,15 +154,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 	}
 	break;
-	case WM_PAINT:
-	{
-		PAINTSTRUCT ps;
-		HDC hdc = BeginPaint(hWnd, &ps);
-		EndPaint(hWnd, &ps);
-	}
-	break;
-	case WM_DESTROY:
-		PostQuitMessage(0);
+	case WM_NOTIFY:
+		if (((LPNMHDR)lParam)->hwndFrom == hListProcesses && ((LPNMHDR)lParam)->code == LVN_ITEMCHANGED) {
+			NMLISTVIEW* pNMLV = (NMLISTVIEW*)lParam;
+			if (pNMLV->uNewState & LVIS_SELECTED) {
+				wchar_t buffer[10];
+				ListView_GetItemText(hListProcesses, pNMLV->iItem, 0, buffer, sizeof(buffer));
+				DWORD processID = _wtoi(buffer);
+				PopulateThreadsList(hListThreads, processID);
+			}
+		}
 		break;
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
