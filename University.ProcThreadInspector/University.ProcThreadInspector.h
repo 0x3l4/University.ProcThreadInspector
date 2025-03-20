@@ -10,3 +10,4 @@ void UpdateProcessCount(HWND hWnd);
 void UpdateTotalThreadCount(HWND hWnd);
 int CALLBACK CompareFuncProcesses(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
 int CALLBACK CompareFuncThreads(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
+int ListView_FindItemByLParam(HWND hListView, LPARAM lParam);

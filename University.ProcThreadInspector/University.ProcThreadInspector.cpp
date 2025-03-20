@@ -146,6 +146,10 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 // Основная функция обработки сообщений окна
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	LPNMHDR lpnmh = nullptr;
+	HDC hdc = nullptr; // Инициализация по умолчанию
+	UINT wmId = 0; // Инициализация по умолчанию
+
 	switch (message)
 	{
 	case WM_CREATE: // Сообщение отправляется при создании окна
@@ -179,24 +183,25 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		// Заполняем список процессов
 		PopulateProcessesList(hListProcesses);
 		break;
+
 	case WM_PAINT: // Сообщение приходит при необходимости перерисовки окна
-	{
 		PAINTSTRUCT ps;
-		HDC hdc = BeginPaint(hWnd, &ps); // Начинаем отрисовку
+		hdc = BeginPaint(hWnd, &ps); // Начинаем отрисовку
 		EndPaint(hWnd, &ps); // Заканчиваем отрисовку
-	}
-	break;
+		break;
+
 	case WM_DESTROY: // Сообщение приходит при уничтожении окна
 		PostQuitMessage(0); // Завершение работы программы
 		break;
+
 	case WM_COMMAND: // Сообщение приходит при выборе пункта меню или нажатии кнопки
-	{
-		int wmId = LOWORD(wParam); // Идентифицируем команду
 
 		// Проверяем изменение выбора в списке процессов
-		if (LOWORD(wParam) == IDC_LIST_PROCESSES && HIWORD(wParam) == LBN_SELCHANGE) {
+		if (LOWORD(wParam) == IDC_LIST_PROCESSES && HIWORD(wParam) == LBN_SELCHANGE)
+		{
 			int index = (int)SendMessage(hListProcesses, LB_GETCURSEL, 0, 0);
-			if (index != LB_ERR) { // Если элемент выбран
+			if (index != LB_ERR)
+			{ // Если элемент выбран
 				wchar_t buffer[256]; // Буфер для хранения текста
 				// Получаем текст выбранного элемента
 				SendMessage(hListProcesses, LB_GETTEXT, index, (LPARAM)buffer);
@@ -206,6 +211,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				PopulateThreadsList(hListThreads, processID);
 			}
 		}
+
+		wmId = LOWORD(wParam); // Идентифицируем команду
 
 		// Реагируем на команды из меню
 		switch (wmId)
@@ -222,14 +229,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			PopulateProcessesList(hListProcesses);
 			// Удаляем все элементы из списка потоков
 			ListView_DeleteAllItems(hListThreads);
+			break;
 		}
-	}
 
-	break;
+		break;
 	case WM_NOTIFY: // Сообщение приходит от элементов управления
-		if (((LPNMHDR)lParam)->hwndFrom == hListProcesses && ((LPNMHDR)lParam)->code == LVN_ITEMCHANGED) {
+		if (((LPNMHDR)lParam)->hwndFrom == hListProcesses && ((LPNMHDR)lParam)->code == LVN_ITEMCHANGED)
+		{
 			NMLISTVIEW* pNMLV = (NMLISTVIEW*)lParam; // Получаем указатель на структуру уведомлений списка
-			if (pNMLV->uNewState & LVIS_SELECTED) {  // Проверяем, был ли выделен новый элемент
+			if (pNMLV->uNewState & LVIS_SELECTED) // Проверяем, был ли выделен новый элемент
+			{
 				wchar_t buffer[10]; // Буфер для хранения текста
 				// Получаем текст выбранного элемента
 				ListView_GetItemText(hListProcesses, pNMLV->iItem, 0, buffer, sizeof(buffer));
@@ -240,9 +249,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			}
 		}
 
-		if (((LPNMHDR)lParam)->hwndFrom == hListProcesses && ((LPNMHDR)lParam)->code == LVN_COLUMNCLICK) {
-			NMLISTVIEW* pNMLV = (NMLISTVIEW*)lParam;
+		lpnmh = (LPNMHDR)lParam;
 
+		// Обработка списка процессов
+		if (lpnmh->hwndFrom == hListProcesses && lpnmh->code == LVN_COLUMNCLICK) {
+			NMLISTVIEW* pNMLV = (NMLISTVIEW*)lParam;
 			if (sortColumnProcesses == pNMLV->iSubItem) {
 				ascendingProcesses = !ascendingProcesses;
 			}
@@ -250,12 +261,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				sortColumnProcesses = pNMLV->iSubItem;
 				ascendingProcesses = true;
 			}
-
 			ListView_SortItems(hListProcesses, CompareFuncProcesses, (LPARAM)&ascendingProcesses);
 		}
-		else if (((LPNMHDR)lParam)->hwndFrom == hListThreads && ((LPNMHDR)lParam)->code == LVN_COLUMNCLICK) {
-			NMLISTVIEW* pNMLV = (NMLISTVIEW*)lParam;
 
+		// Обработка списка потоков
+		if (lpnmh->hwndFrom == hListThreads && lpnmh->code == LVN_COLUMNCLICK) {
+			NMLISTVIEW* pNMLV = (NMLISTVIEW*)lParam;
 			if (sortColumnThreads == pNMLV->iSubItem) {
 				ascendingThreads = !ascendingThreads;
 			}
@@ -263,12 +274,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				sortColumnThreads = pNMLV->iSubItem;
 				ascendingThreads = true;
 			}
-
 			ListView_SortItems(hListThreads, CompareFuncThreads, (LPARAM)&ascendingThreads);
+		}
+
 		break;
 	default: // Для всех остальных сообщений используем стандартную обработку
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
+
 	return 0; // Для всех остальных сообщений используем стандартную обработку
 }
 
@@ -353,18 +366,17 @@ void PopulateProcessesList(HWND hList)
 				swprintf(pidStr, 10, L"%d", pid);
 				swprintf(threadStr, 10, L"%d", threadCount);
 
-				// Готовим структуру для вставки нового элемента в список
-				lvI.mask = LVIF_TEXT;
-				lvI.iItem = ListView_GetItemCount(hListProcesses);  // Новый элемент будет последним
-				lvI.iSubItem = 0;                         // Первая колонка (идентификатор процесса)
+				LVITEM lvI;
+				lvI.mask = LVIF_TEXT | LVIF_PARAM;
+				lvI.iItem = ListView_GetItemCount(hListProcesses);
+				lvI.iSubItem = 0;
 				lvI.pszText = pidStr;
-
-				// Вставляем новый элемент в список
+				lvI.lParam = pid;  // ❗ Храним PID, а не индекс строки!
 				ListView_InsertItem(hListProcesses, &lvI);
 
 				// Добавляем дополнительные столбцы с именем процесса и количеством потоков
-				ListView_SetItemText(hListProcesses, lvI.iItem, 1, processName);
-				ListView_SetItemText(hListProcesses, lvI.iItem, 2, threadStr);
+				ListView_SetItemText(hList, lvI.iItem, 1, processName);
+				ListView_SetItemText(hList, lvI.iItem, 2, threadStr);
 
 				// Закрываем дескриптор процесса
 				CloseHandle(hProcess);
@@ -406,13 +418,12 @@ void PopulateThreadsList(HWND hList, DWORD processId)
 				swprintf(pidStr, 10, L"%d", te.th32OwnerProcessID);
 
 				// Готовим структуру для вставки нового элемента в список
-				lvI.mask = LVIF_TEXT;
-				lvI.iItem = ListView_GetItemCount(hList);  // Новый элемент будет последним
-				lvI.iSubItem = 0;                         // Первая колонка (идентификатор потока)
+				lvI.mask = LVIF_TEXT | LVIF_PARAM;
+				lvI.iItem = ListView_GetItemCount(hListThreads);
+				lvI.iSubItem = 0;
 				lvI.pszText = tidStr;
-
-				// Вставляем новый элемент в список
-				ListView_InsertItem(hList, &lvI);
+				lvI.lParam = te.th32ThreadID;  // ❗ Храним TID, а не индекс строки!
+				ListView_InsertItem(hListThreads, &lvI);
 
 				// Добавляем дополнительный столбец с идентификатором процесса
 				ListView_SetItemText(hList, lvI.iItem, 1, pidStr);
@@ -502,43 +513,60 @@ void UpdateTotalThreadCount(HWND hWnd) {
 	CloseHandle(hSnap);
 
 	wchar_t buffer[50];
-	swprintf(buffer, 50, L"Всего потоков: %d", totalThreads);
+	swprintf(buffer, 50, L"Потоков: %d", totalThreads);
 	SetWindowText(hStaticThreadCount, buffer);
 }
 
 int CALLBACK CompareFuncProcesses(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort) {
-	wchar_t text1[256], text2[256];
-	ListView_GetItemText(hListProcesses, lParam1, sortColumnProcesses, text1, sizeof(text1));
-	ListView_GetItemText(hListProcesses, lParam2, sortColumnProcesses, text2, sizeof(text2));
-
 	bool ascending = *(bool*)lParamSort;
+	wchar_t text1[256], text2[256];
 
-	int result;
-	if (sortColumnProcesses == 0 || sortColumnProcesses == 2) {  // PID или Кол-во потоков
+	// Получаем индекс строк
+	int index1 = ListView_FindItemByLParam(hListProcesses, lParam1);
+	int index2 = ListView_FindItemByLParam(hListProcesses, lParam2);
+
+	ListView_GetItemText(hListProcesses, index1, sortColumnProcesses, text1, sizeof(text1));
+	ListView_GetItemText(hListProcesses, index2, sortColumnProcesses, text2, sizeof(text2));
+
+	int result = 0;
+
+	// Числовая или строковая сортировка
+	if (sortColumnProcesses == 0 || sortColumnProcesses == 2) {  // ID процесса / Количество потоков
 		int num1 = _wtoi(text1);
 		int num2 = _wtoi(text2);
-		result = (num1 - num2);
+		result = num1 - num2;
 	}
-	else {  // Имя процесса
+	else {  // Имя процесса (строка)
 		result = wcscmp(text1, text2);
 	}
 
 	return ascending ? result : -result;
 }
 
-int CALLBACK CompareFuncThreads(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort) {
-	wchar_t text1[256], text2[256];
-	ListView_GetItemText(hListThreads, lParam1, sortColumnThreads, text1, sizeof(text1));
-	ListView_GetItemText(hListThreads, lParam2, sortColumnThreads, text2, sizeof(text2));
-
+int CALLBACK CompareFuncThreads(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort) 
+{
 	bool ascending = *(bool*)lParamSort;
+	wchar_t text1[256], text2[256];
+
+	int index1 = ListView_FindItemByLParam(hListThreads, lParam1);
+	int index2 = ListView_FindItemByLParam(hListThreads, lParam2);
+
+	ListView_GetItemText(hListThreads, index1, sortColumnThreads, text1, sizeof(text1));
+	ListView_GetItemText(hListThreads, index2, sortColumnThreads, text2, sizeof(text2));
 
 	int num1 = _wtoi(text1);
 	int num2 = _wtoi(text2);
+	int result = num1 - num2;
 
-
-	int result = (num1 - num2);
 	return ascending ? result : -result;
 }
+
+int ListView_FindItemByLParam(HWND hListView, LPARAM lParam) {
+	LVFINDINFO findInfo = { 0 };
+	findInfo.flags = LVFI_PARAM;
+	findInfo.lParam = lParam;
+	return ListView_FindItem(hListView, -1, &findInfo);
+}
+
 
 
